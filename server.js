@@ -44,6 +44,9 @@ var account = accounts[account_index];
 /*ROUTER*/
 var dwRouter = express.Router();
 
+tools.init(account.username, account.password,function(result){
+		//console.log("token " + res);
+});
 
 dwRouter.get('/:id', function(req, res) {
 	var id = req.params.id;
@@ -52,8 +55,7 @@ dwRouter.get('/:id', function(req, res) {
 
 
 
-	tools.init(account.username, account.password,function(result){
-		//console.log("token " + res);
+	
 		tools.getTrack(id,function(track){
 			/*return "url: " + tools.downloadUrl + " ciao";*/
 			//var json = {"url" : result}
@@ -72,7 +74,6 @@ dwRouter.get('/:id', function(req, res) {
 			});
 		});
 		
-	});
 
 
 });
