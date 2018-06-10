@@ -82,9 +82,10 @@ dwRouter.get('/:id', function(req, res) {
 app.use('/downloadTrack', dwRouter);
 
 
-
-
-
+//uncaughtException
+process.on('uncaughtException', function(err) {
+  console.log('Caught exception: ' + err);
+});
 
 
 
