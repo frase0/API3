@@ -1,5 +1,7 @@
 var express = require('express');
 var stream = require('stream');
+var http = require('http');
+var fs   = require('fs');
 var app = express();
 var server_port = process.env.PORT || 3000;
 //var server_ip = process.env.app_host || "127.0.0.1";
@@ -83,7 +85,10 @@ dwRouter.get('/dev/:id', function(req, res) {
 	//res.send('ciaooo ' + id);
 
 
-
+	res.set('Content-disposition', 'attachment; filename=audio.mp3');
+	res.set('Content-Type', 'audio/mpeg');
+	res.set('accept-ranges', 'bytes');
+	
 
 	
 		tools.getTrack(id,function(track){
@@ -92,9 +97,8 @@ dwRouter.get('/dev/:id', function(req, res) {
 			//res.json(track);
 			
 			tools.decryptTrackDev(track, function(chunk){
-				/*res.write(result,'binary');
-	    		res.end(null, 'binary');*/
-	    		res.write(chunk);
+				
+				res.write(chunk)
 			});
 		});
 		
