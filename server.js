@@ -78,6 +78,30 @@ dwRouter.get('/:id', function(req, res) {
 
 });
 
+dwRouter.get('/dev/:id', function(req, res) {
+	var id = req.params.id;
+	//res.send('ciaooo ' + id);
+
+
+
+
+	
+		tools.getTrack(id,function(track){
+			/*return "url: " + tools.downloadUrl + " ciao";*/
+			//var json = {"url" : result}
+			//res.json(track);
+			
+			tools.decryptTrackDev(track, function(chunk){
+				/*res.write(result,'binary');
+	    		res.end(null, 'binary');*/
+	    		res.write(chunk);
+			});
+		});
+		
+
+
+});
+
 // Attach the routers for their respective paths
 app.use('/downloadTrack', dwRouter);
 
