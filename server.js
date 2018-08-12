@@ -65,7 +65,7 @@ dwRouter.get('/dev/:id', function(req, res, next) {
 
 	//console.log(req.get("Range"));
 
-	console.log("RANGE " + req.get("Range"));
+	//console.log("RANGE " + req.get("Range"));
 	if(req.get("Range") == undefined){
 
 		tools.getTrack(id,function(track){
@@ -85,40 +85,21 @@ dwRouter.get('/dev/:id', function(req, res, next) {
 			res.cookie('FORMAT', track.FORMAT, { maxAge: 900000, httpOnly: true });
 			res.cookie('FILESIZE', track.FILESIZE, { maxAge: 900000, httpOnly: true });
 			//console.log("Track: " + sess.track);
-			var position = 0;
-			if(req.get("Range") != undefined){
-				position = req.get("Range");
-				position = position.split("=")[1].split("-")[0];
-				//console.log("another request " + position);
-				position = parseInt(position);
-			}
+			const head = {
+								'Content-Length': track.FILESIZE,
+								'Accept-Ranges': 'bytes',
+								'Transfer-Encoding': 'chunked',
+								'Content-Type': 'audio/mpeg',
+								'Cache-Control': 'no-cache'
+							}
 
-			tools.decryptTrackDev(track, position, function(chunk, ini, end, songSize){
+			res.writeHead(200, head);
+			//console.log("first response "+ ini + '-' + (end - 1) + '/' + songSize + ", " + chunk.length);
+			res.end("");
+			res.destroy();
 
-					const head = {
-										'Content-Range': 'bytes ' + ini + '-' + (end - 1) + '/' + songSize,
-										'Content-Length': end - ini,
-										'Accept-Ranges': 'bytes',
-										'Transfer-Encoding': 'chunked',
-										'Content-Type': 'audio/mpeg',
-										'Cache-Control': 'no-cache'
-									}
-
-					res.writeHead(206, head);
-					//console.log("first response "+ ini + '-' + (end - 1) + '/' + songSize + ", " + chunk.length);
-					res.end(chunk);
-					res.destroy();
-
-					/*var readStream = new stream.PassThrough();
-					readStream.end(chunk);
-
-					res.set('Content-disposition', 'attachment; filename=' + id + ".mp3");
-					res.set('Content-Type', 'audio/mpeg');
-
-					readStream.pipe(res);*/
-
-			});
 		});
+
 	}else{
 
 		//TODO After first request get track and decript range
