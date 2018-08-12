@@ -6,7 +6,7 @@
     "test": "test",
     "start": "node server.js"
   },
-  "main":"server.js",
+  "main": "server.js",
   "repository": {
     "type": "git",
     "url": "null"
@@ -20,8 +20,10 @@
     "nodemon": "^1.17.2"
   },
   "dependencies": {
+    "client-sessions": "^0.8.0",
     "crypto": "^1.0.1",
     "express": "^4.16.3",
-    "requestretry": "^1.13.0"
+    "requestretry": "^1.13.0",
+    "web-audio-stream": "^3.0.1"
   }
 }

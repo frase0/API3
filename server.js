@@ -2,6 +2,10 @@ var express = require('express');
 var stream = require('stream');
 var http = require('http');
 var fs   = require('fs');
+var session = require('client-sessions');
+const Writable = require('web-audio-stream/writable');
+const context = require('audio-context');
+
 var app = express();
 var server_port = process.env.PORT || 3000;
 //var server_ip = process.env.app_host || "127.0.0.1";
@@ -13,40 +17,13 @@ var tools = require('./lib/tools');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-var accounts = [{
-					"username": "onesomeone@yandex.com",
-					"password": "onepassword"
-				},
-				{
-					"username": "buffiloffi@yandex.com",
-					"password": "onepassword"
-				},
-				{
-					"username": "lotomomoto@yandex.com",
-					"password": "onepassword"
-				},
-				{
-					"username": "abdulabi@yandex.com",
-					"password": "onepassword"
-				},
-				{
-					"username": "roachmama@yandex.com",
-					"password": "onepassword"
-				},
-				{
-					"username": "capacollo@yandex.com",
-					"password": "onepassword"
-				}];
 
-
-var account_index = Math.floor(Math.random() * 5) + 0;
-var account = accounts[account_index];
 
 
 /*ROUTER*/
 var dwRouter = express.Router();
 
-tools.init(account.username, account.password,function(result){
+tools.init(function(result){
 		//console.log("token " + res);
 });
 
@@ -57,12 +34,12 @@ dwRouter.get('/:id', function(req, res) {
 
 
 
-	
+
 		tools.getTrack(id,function(track){
 			/*return "url: " + tools.downloadUrl + " ciao";*/
 			//var json = {"url" : result}
 			//res.json(track);
-			
+
 			tools.decryptTrack(track, function(result){
 				/*res.write(result,'binary');
 	    		res.end(null, 'binary');*/
@@ -75,34 +52,108 @@ dwRouter.get('/:id', function(req, res) {
 				readStream.pipe(res);
 			});
 		});
-		
+
 
 
 });
 
-dwRouter.get('/dev/:id', function(req, res) {
+//TODO Multiple request
+dwRouter.get('/dev/:id', function(req, res, next) {
 	var id = req.params.id;
-	//res.send('ciaooo ' + id);
 
+	//console.log("cookie " + req.headers.cookie);
 
-	res.set('Content-disposition', 'attachment; filename=audio.mp3');
-	res.set('Content-Type', 'audio/mpeg');
-	res.set('accept-ranges', 'bytes');
-	
+	//console.log(req.get("Range"));
 
-	
+	console.log("RANGE " + req.get("Range"));
+	if(req.get("Range") == undefined){
+
 		tools.getTrack(id,function(track){
 			/*return "url: " + tools.downloadUrl + " ciao";*/
 			//var json = {"url" : result}
 			//res.json(track);
-			
-			tools.decryptTrackDev(track, function(chunk){
-				
-				res.write(chunk)
+			if (track == null) {
+				return;
+			}
+			res.clearCookie("SNG_ID");
+			res.clearCookie("DW_URL");
+			res.clearCookie("FORMAT");
+			res.clearCookie("FILESIZE");
+
+			res.cookie('SNG_ID', track.SNG_ID, { maxAge: 900000, httpOnly: true });
+			res.cookie('DW_URL', track.DW_URL, { maxAge: 900000, httpOnly: true });
+			res.cookie('FORMAT', track.FORMAT, { maxAge: 900000, httpOnly: true });
+			res.cookie('FILESIZE', track.FILESIZE, { maxAge: 900000, httpOnly: true });
+			//console.log("Track: " + sess.track);
+			var position = 0;
+			if(req.get("Range") != undefined){
+				position = req.get("Range");
+				position = position.split("=")[1].split("-")[0];
+				console.log("another request " + position);
+				position = parseInt(position);
+			}
+
+			tools.decryptTrackDev(track, position, function(chunk, ini, end, songSize){
+
+					const head = {
+										'Content-Range': 'bytes ' + ini + '-' + (end - 1) + '/' + songSize,
+										'Content-Length': end - ini,
+										'Accept-Ranges': 'bytes',
+										'Transfer-Encoding': 'chunked',
+										'Content-Type': 'audio/mpeg',
+										'Cache-Control': 'no-cache'
+									}
+
+					res.writeHead(206, head);
+					console.log("first response "+ ini + '-' + (end - 1) + '/' + songSize + ", " + chunk.length);
+					res.end(chunk);
+					res.destroy();
+
+					/*var readStream = new stream.PassThrough();
+					readStream.end(chunk);
+
+					res.set('Content-disposition', 'attachment; filename=' + id + ".mp3");
+					res.set('Content-Type', 'audio/mpeg');
+
+					readStream.pipe(res);*/
+
 			});
 		});
-		
+	}else{
 
+		//TODO After first request get track and decript range
+		var position = req.get("Range");
+		position = position.split("=")[1].split("-")[0];
+		console.log("\n\n\nanother request " + position);
+		var track = {};
+		req.headers.cookie.split(/\s*;\s*/).forEach(function(pair) {
+		  pair = pair.split(/\s*=\s*/);
+		  track[pair[0]] = pair.splice(1).join('=');
+		});
+
+		tools.decryptTrackDev(track, parseInt(position, 10), function(chunk, ini, end, songSize){
+
+					console.log("response " + ini + '-' + (end - 1) + '/' + songSize + ", " + chunk.length);
+
+					const head = {
+										'Content-Range': 'bytes ' + ini + '-' + (end - 1) + '/' + songSize,
+										'Content-Length': end - ini,
+										'Accept-Ranges': 'bytes',
+										'Transfer-Encoding': 'chunked',
+										'Content-Type': 'audio/mpeg',
+										'Cache-Control': 'no-cache'
+									}
+
+
+					res.writeHead(206, head);
+
+					res.end(chunk);
+
+					res.destroy();
+
+
+			});
+	}
 
 });
 
@@ -112,7 +163,8 @@ app.use('/downloadTrack', dwRouter);
 
 //uncaughtException
 process.on('uncaughtException', function(err) {
-  console.log('Caught exception: ' + err);
+ 	console.log('Caught exception: ' + err);
+	console.trace(err);
 });
 
 
