@@ -89,7 +89,7 @@ dwRouter.get('/dev/:id', function(req, res, next) {
 			if(req.get("Range") != undefined){
 				position = req.get("Range");
 				position = position.split("=")[1].split("-")[0];
-				console.log("another request " + position);
+				//console.log("another request " + position);
 				position = parseInt(position);
 			}
 
@@ -105,7 +105,7 @@ dwRouter.get('/dev/:id', function(req, res, next) {
 									}
 
 					res.writeHead(206, head);
-					console.log("first response "+ ini + '-' + (end - 1) + '/' + songSize + ", " + chunk.length);
+					//console.log("first response "+ ini + '-' + (end - 1) + '/' + songSize + ", " + chunk.length);
 					res.end(chunk);
 					res.destroy();
 
@@ -124,7 +124,7 @@ dwRouter.get('/dev/:id', function(req, res, next) {
 		//TODO After first request get track and decript range
 		var position = req.get("Range");
 		position = position.split("=")[1].split("-")[0];
-		console.log("\n\n\nanother request " + position);
+		//console.log("\n\n\nanother request " + position);
 		var track = {};
 		req.headers.cookie.split(/\s*;\s*/).forEach(function(pair) {
 		  pair = pair.split(/\s*=\s*/);
@@ -133,7 +133,7 @@ dwRouter.get('/dev/:id', function(req, res, next) {
 
 		tools.decryptTrackDev(track, parseInt(position, 10), function(chunk, ini, end, songSize){
 
-					console.log("response " + ini + '-' + (end - 1) + '/' + songSize + ", " + chunk.length);
+					//console.log("response " + ini + '-' + (end - 1) + '/' + songSize + ", " + chunk.length);
 
 					const head = {
 										'Content-Range': 'bytes ' + ini + '-' + (end - 1) + '/' + songSize,
